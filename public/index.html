@@ -86,6 +86,17 @@
   .roster .you { font-family: 'Spline Sans Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; background: var(--gorse); color: var(--sea-deep); padding: 2px 8px; border-radius: 2px; }
   .roster .locked-in { font-family: 'Spline Sans Mono', monospace; font-size: 0.66rem; color: var(--whin); }
   .count-line { font-family: 'Spline Sans Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); margin: 22px 0 4px; }
+
+  /* rules */
+  details.rules { margin-top: 20px; border: 1px solid var(--line); border-radius: 2px; background: var(--links-fog); }
+  details.rules summary { cursor: pointer; padding: 14px 18px; font-family: 'Spline Sans Mono', monospace; font-size: 0.76rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sea-deep); list-style: none; display: flex; align-items: center; justify-content: space-between; }
+  details.rules summary::-webkit-details-marker { display: none; }
+  details.rules summary .chev { transition: transform 0.2s; color: var(--gorse); }
+  details.rules[open] summary .chev { transform: rotate(180deg); }
+  details.rules .rules-body { padding: 4px 18px 18px; }
+  details.rules ol { margin: 0; padding-left: 20px; }
+  details.rules li { margin-bottom: 12px; color: var(--slate); font-size: 0.9rem; }
+  details.rules li b { color: var(--sea-deep); font-weight: 600; }
   footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); font-family: 'Spline Sans Mono', monospace; font-size: 0.7rem; color: var(--slate); }
 </style>
 </head>
@@ -97,6 +108,18 @@
     <p class="subtitle">Sign up, draft six golfers from three tiers, and wait. Everyone's picks stay hidden until the first tee shot — then the standings go live.</p>
     <div class="live-bar"><span class="dot" id="dot"></span><span id="liveText">Connecting…</span></div>
     <div class="countdown" id="countdown">Loading…</div>
+    <details class="rules">
+      <summary>How it works <span class="chev">▾</span></summary>
+      <div class="rules-body">
+        <ol>
+          <li><b>Draft six golfers.</b> Pick two from each tier. Tiers are set automatically by ranking, so no one argues over who's a favourite.</li>
+          <li><b>Best four count.</b> Your four best scores to par are added up; the worst two are dropped, so a missed cut won't sink you.</li>
+          <li><b>Lowest total wins.</b> The lowest combined score to par takes the pool. Ties broken by the best single golfer's finish.</li>
+          <li><b>Picks stay hidden</b> until the first tee shot, then everyone's entry reveals and the standings go live.</li>
+          <li><b>The pot.</b> Equal buy-in from everyone. Suggested split: 60 / 30 / 10 for the top three, or 70 / 30 for two.</li>
+        </ol>
+      </div>
+    </details>
   </header>
 
   <div id="app"><div class="loading">Loading…</div></div>
