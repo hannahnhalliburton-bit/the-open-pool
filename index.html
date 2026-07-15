@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Open — Draft Pool</title>
+<title>Fore Play</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Spline+Sans+Mono:wght@400;500;600&family=Spline+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --links-fog: #E8E4D8; --links-paper: #F2EFE6; --gorse: #C9A227;
@@ -21,238 +22,316 @@
       radial-gradient(circle at 15% 20%, rgba(138,154,91,0.06) 0%, transparent 40%),
       radial-gradient(circle at 85% 70%, rgba(46,74,71,0.05) 0%, transparent 45%);
   }
-  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px 80px; }
-  header { padding: 48px 0 32px; border-bottom: 2px solid var(--sea-deep); position: relative; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; }
+  header { padding: 40px 0 28px; border-bottom: 2px solid var(--sea-deep); position: relative; }
   .eyebrow { font-family: 'Spline Sans Mono', monospace; font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--sea); margin-bottom: 14px; }
-  h1 { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(2.6rem, 8vw, 5rem); line-height: 0.92; letter-spacing: -0.02em; color: var(--sea-deep); }
+  h1 { font-family: 'Fraunces', serif; font-weight: 900; font-size: clamp(2.6rem, 8vw, 4.6rem); line-height: 0.92; letter-spacing: -0.02em; color: var(--sea-deep); }
   h1 em { font-style: italic; color: var(--gorse); }
-  .subtitle { margin-top: 16px; font-size: 1rem; color: var(--slate); max-width: 48ch; }
-  .jug { position: absolute; top: 44px; right: 4px; width: 60px; opacity: 0.85; }
-  @media (max-width: 560px) { .jug { display: none; } }
+  .subtitle { margin-top: 14px; font-size: 1rem; color: var(--slate); max-width: 46ch; }
 
-  .live-bar {
-    display: flex; align-items: center; gap: 10px; margin-top: 24px;
-    font-family: 'Spline Sans Mono', monospace; font-size: 0.78rem; color: var(--slate);
-  }
+  .live-bar { display: flex; align-items: center; gap: 10px; margin-top: 20px; font-family: 'Spline Sans Mono', monospace; font-size: 0.76rem; color: var(--slate); flex-wrap: wrap; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--slate); }
-  .dot.live { background: var(--whin); box-shadow: 0 0 0 0 rgba(138,154,91,0.5); animation: pulse 2s infinite; }
+  .dot.live { background: var(--whin); animation: pulse 2s infinite; }
   .dot.err { background: var(--red); }
   @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(138,154,91,0.5);} 70%{box-shadow:0 0 0 8px rgba(138,154,91,0);} 100%{box-shadow:0 0 0 0 rgba(138,154,91,0);} }
 
-  nav.tabs { display: flex; gap: 4px; margin: 24px 0 0; border-bottom: 1px solid var(--line); }
-  .tab { font-family: 'Spline Sans Mono', monospace; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; background: none; border: none; cursor: pointer; padding: 12px 18px; color: var(--slate); border-bottom: 3px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
-  .tab:hover { color: var(--ink); }
-  .tab.active { color: var(--sea-deep); border-bottom-color: var(--gorse); font-weight: 600; }
-  .panel { display: none; padding-top: 32px; }
-  .panel.active { display: block; }
+  .countdown { margin-top: 24px; background: var(--sea-deep); color: var(--links-fog); padding: 16px 20px; border-radius: 2px; font-family: 'Spline Sans Mono', monospace; font-size: 0.9rem; display: flex; align-items: center; gap: 12px; }
+  .countdown b { color: var(--gorse); }
 
-  .players { display: grid; gap: 18px; }
-  .player { background: var(--links-fog); border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
-  .player-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: var(--links-paper); border-bottom: 1px solid var(--line); }
-  .player-head input.pname { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.2rem; border: none; background: none; color: var(--sea-deep); flex: 1; min-width: 0; }
-  .player-head input.pname:focus { outline: none; border-bottom: 2px solid var(--gorse); }
-  .player-total { font-family: 'Spline Sans Mono', monospace; font-weight: 600; font-size: 1.3rem; color: var(--ink); padding: 4px 12px; background: var(--links-fog); border: 1px solid var(--line); border-radius: 2px; min-width: 62px; text-align: center; }
-  .rank-badge { font-family: 'Spline Sans Mono', monospace; font-size: 0.7rem; background: var(--gorse); color: var(--sea-deep); font-weight: 600; padding: 3px 8px; border-radius: 2px; letter-spacing: 0.05em; }
-  .rank-badge.leader { background: var(--sea-deep); color: var(--gorse); }
-  .del-player { background: none; border: none; cursor: pointer; color: var(--slate); font-size: 1.1rem; padding: 2px 6px; border-radius: 2px; line-height: 1; }
-  .del-player:hover { color: var(--red); background: rgba(166,58,46,0.08); }
-  .golfers { padding: 6px 18px 16px; }
-  .golfer-row { display: grid; grid-template-columns: 70px 1fr 90px; gap: 10px; align-items: center; padding: 6px 0; }
-  .golfer-row select { font-family: 'Spline Sans', sans-serif; font-size: 0.9rem; border: 1px solid var(--line); background: #fff; padding: 7px 10px; border-radius: 2px; color: var(--ink); width: 100%; }
-  .tier-label { font-family: 'Spline Sans Mono', monospace; font-size: 0.78rem; font-weight: 600; color: var(--sea-deep); }
-  .tier-label small { display: block; font-weight: 400; color: var(--slate); font-size: 0.62rem; }
-  .golfer-row .score { font-family: 'Spline Sans Mono', monospace; text-align: center; font-size: 0.95rem; padding: 7px 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--links-paper); }
-  .golfer-row.dropped { opacity: 0.42; }
-  .golfer-row.dropped .score { text-decoration: line-through; }
-  .row-head { display: grid; grid-template-columns: 70px 1fr 90px; gap: 10px; font-family: 'Spline Sans Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate); padding: 8px 0 4px; }
-  .row-head span:last-child { text-align: center; }
+  section.card { background: var(--links-fog); border: 1px solid var(--line); border-radius: 2px; padding: 24px; margin-top: 24px; }
+  section.card h2 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.4rem; color: var(--sea-deep); margin-bottom: 4px; }
+  section.card p.hint { color: var(--slate); font-size: 0.9rem; margin-bottom: 18px; }
 
-  .btns { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
-  button.act { font-family: 'Spline Sans Mono', monospace; font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; padding: 11px 20px; border-radius: 2px; border: 1px solid var(--sea-deep); background: var(--sea-deep); color: var(--links-fog); transition: all 0.15s; }
+  label.field { display: block; font-family: 'Spline Sans Mono', monospace; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sea); margin: 16px 0 6px; }
+  input.name-in, select { font-family: 'Spline Sans', sans-serif; font-size: 0.95rem; border: 1px solid var(--line); background: #fff; padding: 9px 12px; border-radius: 2px; color: var(--ink); width: 100%; }
+  .pick-row { display: grid; grid-template-columns: 66px 1fr; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .tier-label { font-family: 'Spline Sans Mono', monospace; font-size: 0.8rem; font-weight: 600; color: var(--sea-deep); }
+  .tier-label small { display: block; font-weight: 400; color: var(--slate); font-size: 0.6rem; }
+
+  button.act { font-family: 'Spline Sans Mono', monospace; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; padding: 12px 22px; border-radius: 2px; border: 1px solid var(--sea-deep); background: var(--sea-deep); color: var(--links-fog); transition: all 0.15s; margin-top: 20px; }
   button.act:hover { background: var(--sea); }
-  button.act.ghost { background: none; color: var(--sea-deep); }
-  button.act.ghost:hover { background: var(--links-fog); }
   button.act:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.act.ghost { background: none; color: var(--sea-deep); }
 
-  .notice { background: var(--links-fog); border: 1px solid var(--line); border-left: 3px solid var(--gorse); padding: 12px 16px; border-radius: 2px; font-size: 0.85rem; color: var(--slate); margin-bottom: 20px; }
-  .notice.warn { border-left-color: var(--red); }
-  .empty-note, .loading { font-family: 'Spline Sans Mono', monospace; font-size: 0.82rem; color: var(--slate); text-align: center; padding: 50px; }
+  .msg { margin-top: 14px; font-size: 0.88rem; padding: 10px 14px; border-radius: 2px; }
+  .msg.ok { background: rgba(138,154,91,0.15); color: var(--sea-deep); border-left: 3px solid var(--whin); }
+  .msg.bad { background: rgba(166,58,46,0.1); color: var(--red); border-left: 3px solid var(--red); }
 
-  .rules-grid { display: grid; gap: 20px; }
-  .rule-card { background: var(--links-fog); border: 1px solid var(--line); border-radius: 2px; padding: 22px 24px 22px 60px; position: relative; }
-  .rule-num { position: absolute; left: 20px; top: 22px; font-family: 'Fraunces', serif; font-weight: 900; font-size: 1.6rem; color: var(--gorse); line-height: 1; }
-  .rule-card h3 { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.15rem; margin-bottom: 6px; color: var(--sea-deep); }
-  .rule-card p { color: var(--slate); font-size: 0.95rem; }
+  .locked-note { text-align: center; padding: 30px; font-family: 'Spline Sans Mono', monospace; font-size: 0.85rem; color: var(--slate); }
 
-  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); font-family: 'Spline Sans Mono', monospace; font-size: 0.72rem; color: var(--slate); }
+  /* standings */
+  .entry { background: var(--links-fog); border: 1px solid var(--line); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+  .entry-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: var(--links-paper); border-bottom: 1px solid var(--line); }
+  .entry-head .who { font-family: 'Fraunces', serif; font-weight: 600; font-size: 1.15rem; color: var(--sea-deep); flex: 1; }
+  .entry-total { font-family: 'Spline Sans Mono', monospace; font-weight: 600; font-size: 1.25rem; padding: 4px 12px; background: var(--links-fog); border: 1px solid var(--line); border-radius: 2px; min-width: 58px; text-align: center; }
+  .rank-badge { font-family: 'Spline Sans Mono', monospace; font-size: 0.7rem; background: var(--gorse); color: var(--sea-deep); font-weight: 600; padding: 3px 8px; border-radius: 2px; }
+  .rank-badge.leader { background: var(--sea-deep); color: var(--gorse); }
+  .golfer-line { display: grid; grid-template-columns: 56px 1fr 60px; gap: 10px; padding: 5px 18px; font-size: 0.9rem; align-items: center; }
+  .golfer-line:first-child { padding-top: 12px; }
+  .golfer-line:last-child { padding-bottom: 14px; }
+  .golfer-line.dropped { opacity: 0.4; }
+  .golfer-line .t { font-family: 'Spline Sans Mono', monospace; font-size: 0.72rem; color: var(--slate); }
+  .golfer-line .s { font-family: 'Spline Sans Mono', monospace; text-align: center; }
+
+  .loading { font-family: 'Spline Sans Mono', monospace; font-size: 0.82rem; color: var(--slate); text-align: center; padding: 40px; }
+
+  /* lobby */
+  .lobby-hero { text-align: center; padding: 8px 0 4px; }
+  .lobby-hero .check { width: 46px; height: 46px; border-radius: 50%; background: var(--whin); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 10px; }
+  .roster { list-style: none; margin-top: 8px; }
+  .roster li { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); font-size: 1rem; }
+  .roster li:last-child { border-bottom: none; }
+  .roster .num { font-family: 'Spline Sans Mono', monospace; font-size: 0.78rem; color: var(--slate); width: 22px; }
+  .roster .nm { flex: 1; font-family: 'Fraunces', serif; font-weight: 600; color: var(--sea-deep); }
+  .roster .you { font-family: 'Spline Sans Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; background: var(--gorse); color: var(--sea-deep); padding: 2px 8px; border-radius: 2px; }
+  .roster .locked-in { font-family: 'Spline Sans Mono', monospace; font-size: 0.66rem; color: var(--whin); }
+  .count-line { font-family: 'Spline Sans Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); margin: 22px 0 4px; }
+
+  /* rules */
+  details.rules { margin-top: 20px; border: 1px solid var(--line); border-radius: 2px; background: var(--links-fog); }
+  details.rules summary { cursor: pointer; padding: 14px 18px; font-family: 'Spline Sans Mono', monospace; font-size: 0.76rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sea-deep); list-style: none; display: flex; align-items: center; justify-content: space-between; }
+  details.rules summary::-webkit-details-marker { display: none; }
+  details.rules summary .chev { transition: transform 0.2s; color: var(--gorse); }
+  details.rules[open] summary .chev { transform: rotate(180deg); }
+  details.rules .rules-body { padding: 4px 18px 18px; }
+  details.rules ol { margin: 0; padding-left: 20px; }
+  details.rules li { margin-bottom: 12px; color: var(--slate); font-size: 0.9rem; }
+  details.rules li b { color: var(--sea-deep); font-weight: 600; }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); font-family: 'Spline Sans Mono', monospace; font-size: 0.7rem; color: var(--slate); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <svg class="jug" viewBox="0 0 40 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M14 6 h12 v3 h-12 z M15 9 h10 l2 8 c4 1 6 4 6 8 s-2 7-6 8 l-1 10 h-2 l1-9 h-8 l1 9 h-2 l-1-10 c-4-1-6-4-6-8 s2-7 6-8 z" fill="#C9A227" stroke="#1B302E" stroke-width="1"/>
-      <path d="M27 19 c3 1 4 3 4 6 s-1 5-4 6" stroke="#1B302E" stroke-width="1" fill="none"/>
-      <rect x="12" y="52" width="16" height="4" fill="#1B302E"/>
-    </svg>
-    <div class="eyebrow">The Open Championship · Draft Pool</div>
-    <h1>Play the <em>Links</em></h1>
-    <p class="subtitle">Draft six golfers from three tiers — assigned automatically by world ranking. Best four scores count. Live scores update on their own.</p>
+    <div class="eyebrow">The Open 2026 · Royal Birkdale</div>
+    <h1>Fore <em>Play</em></h1>
+    <p class="subtitle">Sign up, draft six golfers from three tiers, and wait. Everyone's picks stay hidden until the first tee shot — then the standings go live.</p>
     <div class="live-bar"><span class="dot" id="dot"></span><span id="liveText">Connecting…</span></div>
-    <nav class="tabs">
-      <button class="tab active" data-tab="tracker">Tracker</button>
-      <button class="tab" data-tab="rules">The Rules</button>
-    </nav>
+    <div class="countdown" id="countdown">Loading…</div>
+    <details class="rules">
+      <summary>How it works <span class="chev">▾</span></summary>
+      <div class="rules-body">
+        <ol>
+          <li><b>Draft six golfers.</b> Pick two from each tier. Tiers are set automatically by ranking, so no one argues over who's a favourite.</li>
+          <li><b>Best four count.</b> Your four best scores to par are added up; the worst two are dropped, so a missed cut won't sink you.</li>
+          <li><b>Lowest total wins.</b> The lowest combined score to par takes the pool. Ties broken by the best single golfer's finish.</li>
+          <li><b>Picks stay hidden</b> until the first tee shot, then everyone's entry reveals and the standings go live.</li>
+          <li><b>The pot.</b> $20 buy-in from everyone. Winner takes 70%, runner-up takes 30%.</li>
+        </ol>
+      </div>
+    </details>
   </header>
 
-  <section class="panel active" id="tracker">
-    <div id="tierNotice"></div>
-    <div class="players" id="players"><div class="loading">Loading the field…</div></div>
-    <div class="btns">
-      <button class="act" id="addPlayer">+ Add entrant</button>
-      <button class="act ghost" id="refresh">Refresh scores now</button>
-    </div>
-  </section>
+  <div id="app"><div class="loading">Loading…</div></div>
 
-  <section class="panel" id="rules">
-    <div class="rules-grid">
-      <div class="rule-card"><div class="rule-num">1</div><h3>Draft your six</h3><p>Each entrant picks two golfers from each tier. Tiers are set automatically by world ranking, so no one argues over who's a favourite.</p></div>
-      <div class="rule-card"><div class="rule-num">2</div><h3>Best four count</h3><p>Each entrant's four best scores to par are summed. The worst two are dropped, so a missed cut won't sink you.</p></div>
-      <div class="rule-card"><div class="rule-num">3</div><h3>Lowest wins</h3><p>Lowest combined score to par takes the pool. Ties broken by best single finishing position.</p></div>
-      <div class="rule-card"><div class="rule-num">4</div><h3>The pot</h3><p>Equal buy-in. Suggested split: 60 / 30 / 10 for the top three, or 70 / 30 for two.</p></div>
-    </div>
-  </section>
-
-  <footer>Scores &amp; tiers pulled live from the tournament feed. Standings recompute automatically.</footer>
+  <footer>Picks lock and reveal automatically at the first tee time. Scores update live during play.</footer>
 </div>
 
 <script>
-  const COUNT = 4;                 // best-N scores that count
-  const REFRESH_MS = 120000;       // auto-refresh every 2 minutes
+  // ==================== CONFIG ====================
+  // 1) Paste your Supabase project URL and anon key here (from SETUP-SIGNUP.md).
+  const SUPABASE_URL = 'https://woxsnptutddmgwinbgcd.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_QqMHZlvkfylsx9TO1VBfrw_HioNqqCI';
+
+  // 2) Reveal time — when picks unlock and standings appear.
+  //    Default: first tee shot, 1:35am US Eastern on July 16, 2026.
+  //    Format is ISO 8601 with timezone offset. -04:00 is US Eastern in July.
+  const REVEAL_TIME = new Date('2026-07-16T01:35:00-04:00');
+
+  const COUNT = 4; // best-N scores that count
+  // ================================================
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let tiers = { A: [], B: [], C: [] };
-  let scoreMap = {};               // normalised name -> score to par
-  let players = [];
+  let scoreMap = {};
 
   const norm = (s) => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim();
   const esc = (s) => (''+s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = (n) => n===0 ? 'E' : (n>0 ? '+'+n : ''+n);
+  const isRevealed = () => new Date() >= REVEAL_TIME;
 
-  function makePlayer(name='') {
-    return { id: Math.random().toString(36).slice(2), name,
-      picks: [ {tier:'A',name:''},{tier:'A',name:''},{tier:'B',name:''},{tier:'B',name:''},{tier:'C',name:''},{tier:'C',name:''} ] };
-  }
+  // Remember who this browser is, so they edit their own entry.
+  const myId = localStorage.getItem('foreplay_id') || (() => {
+    const id = 'p_' + Math.random().toString(36).slice(2);
+    try { localStorage.setItem('foreplay_id', id); } catch(e){}
+    return id;
+  })();
 
-  function scoreFor(golferName) {
-    if (!golferName) return null;
-    const s = scoreMap[norm(golferName)];
-    return (s===undefined || s===null) ? null : s;
-  }
+  function scoreFor(name) { if(!name) return null; const s = scoreMap[norm(name)]; return (s===undefined||s===null)?null:s; }
 
-  function computeTotal(p) {
-    const scored = p.picks.map((pk,i)=>({ i, s: scoreFor(pk.name) }));
+  function computeTotal(picks) {
+    const scored = picks.map((pk,i)=>({ i, s: scoreFor(pk) }));
     const valid = scored.filter(x=>x.s!==null).sort((a,b)=>a.s-b.s);
     const kept = valid.slice(0, COUNT);
     const dropped = new Set(valid.slice(COUNT).map(x=>x.i));
-    const total = kept.reduce((sum,x)=>sum+x.s, 0);
-    return { total, dropped, hasScores: valid.length>0 };
+    return { total: kept.reduce((s,x)=>s+x.s,0), dropped, hasScores: valid.length>0 };
   }
 
-  function tierOptions(tier, selected) {
+  function tierOpts(tier, sel) {
     const list = tiers[tier] || [];
-    const opts = ['<option value="">— pick —</option>'].concat(
-      list.map(n => `<option ${n===selected?'selected':''}>${esc(n)}</option>`)
-    );
-    // if a saved pick isn't in the current list, keep it visible
-    if (selected && !list.includes(selected)) opts.push(`<option selected>${esc(selected)}</option>`);
-    return opts.join('');
-  }
-
-  function render() {
-    const wrap = document.getElementById('players');
-    if (players.length===0) { wrap.innerHTML = '<div class="empty-note">No entrants yet — add your friends to begin.</div>'; return; }
-
-    const totals = players.map(p=>({ p, ...computeTotal(p) }));
-    const ranked = totals.filter(x=>x.hasScores).sort((a,b)=>a.total-b.total);
-    const rankMap = {}; ranked.forEach((x,i)=>rankMap[x.p.id]=i+1);
-
-    wrap.innerHTML = '';
-    players.forEach((p, pi) => {
-      const t = computeTotal(p);
-      const rank = rankMap[p.id];
-      const el = document.createElement('div');
-      el.className = 'player';
-      el.innerHTML = `
-        <div class="player-head">
-          ${rank ? `<span class="rank-badge ${rank===1?'leader':''}">${rank===1?'▲ 1st':'#'+rank}</span>` : ''}
-          <input class="pname" value="${esc(p.name)}" placeholder="Entrant name" data-pi="${pi}">
-          <span class="player-total">${t.hasScores?fmt(t.total):'—'}</span>
-          <button class="del-player" data-del="${pi}" title="Remove">✕</button>
-        </div>
-        <div class="golfers">
-          <div class="row-head"><span>Tier</span><span>Golfer</span><span>To Par</span></div>
-          ${p.picks.map((pk,gi)=>{
-            const sc = scoreFor(pk.name);
-            return `<div class="golfer-row ${t.dropped.has(gi)?'dropped':''}">
-              <div class="tier-label">Tier ${pk.tier}<small>${pk.tier==='A'?'favourites':pk.tier==='B'?'the pack':'longshots'}</small></div>
-              <select data-pi="${pi}" data-gi="${gi}">${tierOptions(pk.tier, pk.name)}</select>
-              <div class="score">${sc===null?'—':fmt(sc)}</div>
-            </div>`;
-          }).join('')}
-        </div>`;
-      wrap.appendChild(el);
-    });
-
-    wrap.querySelectorAll('input.pname').forEach(inp=>inp.addEventListener('input', e=>{ players[+e.target.dataset.pi].name = e.target.value; }));
-    wrap.querySelectorAll('select').forEach(sel=>sel.addEventListener('change', e=>{
-      const {pi,gi} = e.target.dataset; players[+pi].picks[+gi].name = e.target.value; render();
-    }));
-    wrap.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', e=>{ players.splice(+e.target.dataset.del,1); render(); }));
+    let o = ['<option value="">— pick —</option>'];
+    list.forEach(n => o.push(`<option ${n===sel?'selected':''}>${esc(n)}</option>`));
+    if (sel && !list.includes(sel)) o.push(`<option selected>${esc(sel)}</option>`);
+    return o.join('');
   }
 
   async function loadTiers() {
-    try {
-      const r = await fetch('/api/tiers'); const d = await r.json();
-      if (d.tiers) tiers = d.tiers;
-      const note = document.getElementById('tierNotice');
-      if (d.source === 'ranking') note.innerHTML = '<div class="notice">Tiers assigned automatically by world ranking: Tier A = top 15, Tier B = next 15, Tier C = the rest of the field.</div>';
-      else if (d.source === 'seed') note.innerHTML = '<div class="notice">Tiers built from the seeded favourites list (rankings endpoint unavailable on this plan).</div>';
-      else note.innerHTML = '<div class="notice warn">Rankings unavailable — tiers are alphabetical for now. Add a seed list in api/tiers.js to fix ordering.</div>';
-    } catch(e) {
-      document.getElementById('tierNotice').innerHTML = '<div class="notice warn">Could not load the field. Check that the app is deployed and RAPIDAPI_KEY is set.</div>';
-    }
+    try { const r = await fetch('/api/tiers'); const d = await r.json(); if (d.tiers) tiers = d.tiers; } catch(e){}
   }
-
   async function loadScores() {
     const dot = document.getElementById('dot'), txt = document.getElementById('liveText');
     try {
       const r = await fetch('/api/leaderboard'); const d = await r.json();
-      if (d.players) {
-        scoreMap = {};
-        d.players.forEach(pl => { if (pl.total!==null) scoreMap[norm(pl.name)] = pl.total; });
-        dot.className = 'dot live';
-        txt.textContent = 'Live · updated ' + new Date().toLocaleTimeString();
-        render();
-      } else { throw new Error('no data'); }
-    } catch(e) {
-      dot.className = 'dot err';
-      txt.textContent = 'Scores unavailable — will retry';
+      scoreMap = {};
+      (d.players||[]).forEach(p => { if (p.total!==null) scoreMap[norm(p.name)] = p.total; });
+      dot.className = 'dot live'; txt.textContent = 'Live · ' + new Date().toLocaleTimeString();
+    } catch(e) { dot.className = 'dot err'; txt.textContent = 'Scores unavailable'; }
+  }
+
+  function updateCountdown() {
+    const el = document.getElementById('countdown');
+    if (isRevealed()) { el.innerHTML = '<b>Picks are locked.</b> &nbsp;Standings are live below.'; return; }
+    const ms = REVEAL_TIME - new Date();
+    const h = Math.floor(ms/3.6e6), m = Math.floor((ms%3.6e6)/6e4);
+    el.innerHTML = `Picks reveal in <b>${h}h ${m}m</b> &nbsp;·&nbsp; draft before then`;
+  }
+
+  async function getMyEntry() {
+    const { data } = await sb.from('entries').select('*').eq('player_id', myId).maybeSingle();
+    return data;
+  }
+  async function getAllEntries() {
+    const { data } = await sb.from('entries').select('*').order('created_at');
+    return data || [];
+  }
+
+  // ---------- SIGNUP / PICK VIEW ----------
+  async function renderSignup() {
+    const app = document.getElementById('app');
+    const mine = await getMyEntry();
+    const picks = mine ? mine.picks : ['','','','','',''];
+    const tierMap = ['A','A','B','B','C','C'];
+    const labels = { A:'favourites', B:'the pack', C:'longshots' };
+
+    app.innerHTML = `
+      <section class="card">
+        <h2>${mine ? 'Edit your entry' : 'Join the pool'}</h2>
+        <p class="hint">${mine ? 'You can change your picks until they lock.' : 'Enter your name and draft two golfers from each tier.'}</p>
+        <label class="field">Your name</label>
+        <input class="name-in" id="nameIn" value="${mine?esc(mine.name):''}" placeholder="e.g. Hannah">
+        <div style="margin-top:18px">
+          ${picks.map((pk,i)=>`
+            <label class="field">Tier ${tierMap[i]} pick ${(i%2)+1}</label>
+            <div class="pick-row">
+              <div class="tier-label">Tier ${tierMap[i]}<small>${labels[tierMap[i]]}</small></div>
+              <select data-i="${i}" data-tier="${tierMap[i]}">${tierOpts(tierMap[i], pk)}</select>
+            </div>`).join('')}
+        </div>
+        <button class="act" id="saveBtn">${mine ? 'Update my picks' : 'Submit my entry'}</button>
+        <div id="msg"></div>
+        <p class="hint" style="margin-top:16px; margin-bottom:0;"><a href="#" id="viewLobbyLink" style="color:var(--sea); text-decoration:underline;">See who's already in →</a></p>
+      </section>`;
+
+    document.getElementById('viewLobbyLink').addEventListener('click', (e) => { e.preventDefault(); renderLobby(); });
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const name = document.getElementById('nameIn').value.trim();
+      const sels = [...app.querySelectorAll('select')].map(s=>s.value);
+      const msg = document.getElementById('msg');
+      if (!name) { msg.className='msg bad'; msg.textContent='Please enter your name.'; return; }
+      if (sels.some(s=>!s)) { msg.className='msg bad'; msg.textContent='Pick all six golfers before submitting.'; return; }
+      if (new Set(sels).size !== 6) { msg.className='msg bad'; msg.textContent='No duplicate golfers — pick six different players.'; return; }
+      const row = { player_id: myId, name, picks: sels };
+      const { error } = await sb.from('entries').upsert(row, { onConflict: 'player_id' });
+      if (error) { msg.className='msg bad'; msg.textContent='Could not save: ' + error.message; return; }
+      await renderLobby();
+    });
+  }
+
+  // ---------- LOBBY VIEW ----------
+  async function renderLobby() {
+    const app = document.getElementById('app');
+    const mine = await getMyEntry();
+    const entries = await getAllEntries();
+    const hero = mine
+      ? `<div class="check">✓</div>
+         <h2>You're in${mine.name ? ', ' + esc(mine.name.split(' ')[0]) : ''}!</h2>
+         <p class="hint">Your six picks are locked in and hidden until the first tee shot. You can still change them until then.</p>`
+      : `<h2>Who's in</h2>
+         <p class="hint">Everyone who's signed up so far. Picks stay hidden until the first tee shot.</p>`;
+    app.innerHTML = `
+      <section class="card">
+        <div class="lobby-hero">${hero}</div>
+        <div class="count-line">In the field · ${entries.length} ${entries.length===1?'player':'players'}</div>
+        <ul class="roster">
+          ${entries.map((e,i)=>`
+            <li>
+              <span class="num">${i+1}</span>
+              <span class="nm">${esc(e.name)}</span>
+              ${e.player_id===myId ? '<span class="you">You</span>' : '<span class="locked-in">✓ in</span>'}
+            </li>`).join('') || '<li><span class="nm" style="font-family:inherit;font-weight:400;color:var(--slate)">No one yet — be the first.</span></li>'}
+        </ul>
+        <button class="act ghost" id="editBtn">${mine ? 'Edit my picks' : 'Join the pool'}</button>
+        <button class="act ghost" id="refreshBtn" style="margin-left:10px">Refresh list</button>
+      </section>`;
+    document.getElementById('editBtn').addEventListener('click', renderSignup);
+    document.getElementById('refreshBtn').addEventListener('click', renderLobby);
+  }
+
+  // ---------- STANDINGS VIEW ----------
+  async function renderStandings() {
+    const app = document.getElementById('app');
+    const entries = await getAllEntries();
+    if (!entries.length) { app.innerHTML = '<div class="loading">No entries were submitted.</div>'; return; }
+
+    const withT = entries.map(e => ({ e, ...computeTotal(e.picks) }));
+    const scored = withT.filter(x=>x.hasScores).sort((a,b)=>a.total-b.total);
+    const rankMap = {}; scored.forEach((x,i)=>rankMap[x.e.player_id]=i+1);
+    withT.sort((a,b)=> (rankMap[a.e.player_id]||999)-(rankMap[b.e.player_id]||999));
+
+    const tierMap = ['A','A','B','B','C','C'];
+    app.innerHTML = withT.map(({e, dropped, total, hasScores}) => {
+      const rank = rankMap[e.player_id];
+      return `<div class="entry">
+        <div class="entry-head">
+          ${rank?`<span class="rank-badge ${rank===1?'leader':''}">${rank===1?'▲ 1st':'#'+rank}</span>`:''}
+          <span class="who">${esc(e.name)}</span>
+          <span class="entry-total">${hasScores?fmt(total):'—'}</span>
+        </div>
+        ${e.picks.map((g,i)=>{ const sc=scoreFor(g);
+          return `<div class="golfer-line ${dropped.has(i)?'dropped':''}">
+            <span class="t">Tier ${tierMap[i]}</span><span>${esc(g)}</span>
+            <span class="s">${sc===null?'—':fmt(sc)}</span></div>`;}).join('')}
+      </div>`;
+    }).join('');
+  }
+
+  async function refresh() {
+    updateCountdown();
+    if (isRevealed()) { await loadScores(); await renderStandings(); }
+    else {
+      const mine = await getMyEntry();
+      if (mine) await renderLobby();   // already signed up → show the lobby
+      else await renderSignup();        // new visitor → show the form
     }
   }
 
-  document.getElementById('addPlayer').addEventListener('click', ()=>{ players.push(makePlayer('')); render(); });
-  document.getElementById('refresh').addEventListener('click', loadScores);
-  document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-    tab.classList.add('active'); document.getElementById(tab.dataset.tab).classList.add('active');
-  }));
-
   (async function init(){
-    players = [makePlayer(''), makePlayer('')];
     await loadTiers();
-    await loadScores();
-    render();
-    setInterval(loadScores, REFRESH_MS);
+    if (isRevealed()) await loadScores();
+    await refresh();
+    let wasRevealed = isRevealed();
+    setInterval(async () => {
+      updateCountdown();
+      const nowRevealed = isRevealed();
+      if (nowRevealed) {
+        await loadScores();
+        await renderStandings();   // handles the flip from lobby → standings too
+      } else {
+        wasRevealed = false;
+      }
+      wasRevealed = nowRevealed;
+    }, 120000);
+    setInterval(updateCountdown, 30000);
   })();
 </script>
 </body>
