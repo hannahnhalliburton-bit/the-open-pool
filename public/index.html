@@ -74,6 +74,18 @@
   .golfer-line .s { font-family: 'Spline Sans Mono', monospace; text-align: center; }
 
   .loading { font-family: 'Spline Sans Mono', monospace; font-size: 0.82rem; color: var(--slate); text-align: center; padding: 40px; }
+
+  /* lobby */
+  .lobby-hero { text-align: center; padding: 8px 0 4px; }
+  .lobby-hero .check { width: 46px; height: 46px; border-radius: 50%; background: var(--whin); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 10px; }
+  .roster { list-style: none; margin-top: 8px; }
+  .roster li { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); font-size: 1rem; }
+  .roster li:last-child { border-bottom: none; }
+  .roster .num { font-family: 'Spline Sans Mono', monospace; font-size: 0.78rem; color: var(--slate); width: 22px; }
+  .roster .nm { flex: 1; font-family: 'Fraunces', serif; font-weight: 600; color: var(--sea-deep); }
+  .roster .you { font-family: 'Spline Sans Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; background: var(--gorse); color: var(--sea-deep); padding: 2px 8px; border-radius: 2px; }
+  .roster .locked-in { font-family: 'Spline Sans Mono', monospace; font-size: 0.66rem; color: var(--whin); }
+  .count-line { font-family: 'Spline Sans Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--slate); margin: 22px 0 4px; }
   footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); font-family: 'Spline Sans Mono', monospace; font-size: 0.7rem; color: var(--slate); }
 </style>
 </head>
@@ -206,8 +218,36 @@
       const row = { player_id: myId, name, picks: sels };
       const { error } = await sb.from('entries').upsert(row, { onConflict: 'player_id' });
       if (error) { msg.className='msg bad'; msg.textContent='Could not save: ' + error.message; return; }
-      msg.className='msg ok'; msg.textContent='Saved! Your picks are locked in and hidden until reveal. You can edit until then.';
+      await renderLobby();
     });
+  }
+
+  // ---------- LOBBY VIEW (after submitting, before reveal) ----------
+  async function renderLobby() {
+    const app = document.getElementById('app');
+    const mine = await getMyEntry();
+    const entries = await getAllEntries();
+    app.innerHTML = `
+      <section class="card">
+        <div class="lobby-hero">
+          <div class="check">✓</div>
+          <h2>You're in${mine && mine.name ? ', ' + esc(mine.name.split(' ')[0]) : ''}!</h2>
+          <p class="hint">Your six picks are locked in and hidden until the first tee shot. You can still change them until then.</p>
+        </div>
+        <div class="count-line">In the field · ${entries.length} ${entries.length===1?'player':'players'}</div>
+        <ul class="roster">
+          ${entries.map((e,i)=>`
+            <li>
+              <span class="num">${i+1}</span>
+              <span class="nm">${esc(e.name)}</span>
+              ${e.player_id===myId ? '<span class="you">You</span>' : '<span class="locked-in">✓ in</span>'}
+            </li>`).join('')}
+        </ul>
+        <button class="act ghost" id="editBtn">Edit my picks</button>
+        <button class="act ghost" id="refreshBtn" style="margin-left:10px">Refresh list</button>
+      </section>`;
+    document.getElementById('editBtn').addEventListener('click', renderSignup);
+    document.getElementById('refreshBtn').addEventListener('click', renderLobby);
   }
 
   // ---------- STANDINGS VIEW ----------
@@ -241,15 +281,29 @@
   async function refresh() {
     updateCountdown();
     if (isRevealed()) { await loadScores(); await renderStandings(); }
-    else { await renderSignup(); }
+    else {
+      const mine = await getMyEntry();
+      if (mine) await renderLobby();   // already signed up → show the lobby
+      else await renderSignup();        // new visitor → show the form
+    }
   }
 
   (async function init(){
     await loadTiers();
     if (isRevealed()) await loadScores();
     await refresh();
-    setInterval(async () => { updateCountdown(); if (isRevealed()) { await loadScores(); await renderStandings(); } }, 120000);
-    // flip from signup to standings right at reveal without a manual refresh
+    let wasRevealed = isRevealed();
+    setInterval(async () => {
+      updateCountdown();
+      const nowRevealed = isRevealed();
+      if (nowRevealed) {
+        await loadScores();
+        await renderStandings();   // handles the flip from lobby → standings too
+      } else {
+        wasRevealed = false;
+      }
+      wasRevealed = nowRevealed;
+    }, 120000);
     setInterval(updateCountdown, 30000);
   })();
 </script>
