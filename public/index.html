@@ -229,8 +229,10 @@
         </div>
         <button class="act" id="saveBtn">${mine ? 'Update my picks' : 'Submit my entry'}</button>
         <div id="msg"></div>
+        <p class="hint" style="margin-top:16px; margin-bottom:0;"><a href="#" id="viewLobbyLink" style="color:var(--sea); text-decoration:underline;">See who's already in →</a></p>
       </section>`;
 
+    document.getElementById('viewLobbyLink').addEventListener('click', (e) => { e.preventDefault(); renderLobby(); });
     document.getElementById('saveBtn').addEventListener('click', async () => {
       const name = document.getElementById('nameIn').value.trim();
       const sels = [...app.querySelectorAll('select')].map(s=>s.value);
@@ -245,18 +247,20 @@
     });
   }
 
-  // ---------- LOBBY VIEW (after submitting, before reveal) ----------
+  // ---------- LOBBY VIEW ----------
   async function renderLobby() {
     const app = document.getElementById('app');
     const mine = await getMyEntry();
     const entries = await getAllEntries();
+    const hero = mine
+      ? `<div class="check">✓</div>
+         <h2>You're in${mine.name ? ', ' + esc(mine.name.split(' ')[0]) : ''}!</h2>
+         <p class="hint">Your six picks are locked in and hidden until the first tee shot. You can still change them until then.</p>`
+      : `<h2>Who's in</h2>
+         <p class="hint">Everyone who's signed up so far. Picks stay hidden until the first tee shot.</p>`;
     app.innerHTML = `
       <section class="card">
-        <div class="lobby-hero">
-          <div class="check">✓</div>
-          <h2>You're in${mine && mine.name ? ', ' + esc(mine.name.split(' ')[0]) : ''}!</h2>
-          <p class="hint">Your six picks are locked in and hidden until the first tee shot. You can still change them until then.</p>
-        </div>
+        <div class="lobby-hero">${hero}</div>
         <div class="count-line">In the field · ${entries.length} ${entries.length===1?'player':'players'}</div>
         <ul class="roster">
           ${entries.map((e,i)=>`
@@ -264,9 +268,9 @@
               <span class="num">${i+1}</span>
               <span class="nm">${esc(e.name)}</span>
               ${e.player_id===myId ? '<span class="you">You</span>' : '<span class="locked-in">✓ in</span>'}
-            </li>`).join('')}
+            </li>`).join('') || '<li><span class="nm" style="font-family:inherit;font-weight:400;color:var(--slate)">No one yet — be the first.</span></li>'}
         </ul>
-        <button class="act ghost" id="editBtn">Edit my picks</button>
+        <button class="act ghost" id="editBtn">${mine ? 'Edit my picks' : 'Join the pool'}</button>
         <button class="act ghost" id="refreshBtn" style="margin-left:10px">Refresh list</button>
       </section>`;
     document.getElementById('editBtn').addEventListener('click', renderSignup);
