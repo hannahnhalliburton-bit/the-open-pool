@@ -1,0 +1,9 @@
+{
+  "name": "open-draft-pool",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Open Championship draft pool with live scores and auto-tiering",
+  "engines": {
+    "node": ">=18"
+  }
+}
