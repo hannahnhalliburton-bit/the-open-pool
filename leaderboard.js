@@ -39,6 +39,13 @@ export default async function handler(req, res) {
 
     const data = await r.json();
 
+    // DEBUG: add ?debug=1 to the URL to see every raw field the feed returns
+    // for the first few players. This lets us find hole/tee-time field names.
+    if (req.query && req.query.debug) {
+      const sample = (data.leaderboardRows || []).slice(0, 3);
+      return res.status(200).json({ rawSample: sample });
+    }
+
     // The feed returns a `leaderboardRows` array. Each row has firstName,
     // lastName, position, and `total` (score to par as a string like "-7" or "E").
     const rows = (data.leaderboardRows || []).map((row) => {
