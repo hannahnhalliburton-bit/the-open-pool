@@ -66,12 +66,11 @@
   .entry-total { font-family: 'Spline Sans Mono', monospace; font-weight: 600; font-size: 1.25rem; padding: 4px 12px; background: var(--links-fog); border: 1px solid var(--line); border-radius: 2px; min-width: 58px; text-align: center; }
   .rank-badge { font-family: 'Spline Sans Mono', monospace; font-size: 0.7rem; background: var(--gorse); color: var(--sea-deep); font-weight: 600; padding: 3px 8px; border-radius: 2px; }
   .rank-badge.leader { background: var(--sea-deep); color: var(--gorse); }
-  .golfer-line { display: grid; grid-template-columns: 1fr 60px; gap: 10px; padding: 6px 18px; font-size: 0.9rem; align-items: center; }
+  .golfer-line { display: grid; grid-template-columns: 62px 1fr 60px; gap: 10px; padding: 6px 18px; font-size: 0.9rem; align-items: center; }
   .golfer-line:first-child { padding-top: 12px; }
   .golfer-line:last-child { padding-bottom: 14px; }
   .golfer-line.dropped { opacity: 0.4; }
-  .golfer-line .nm-wrap { display: flex; flex-direction: column; line-height: 1.25; }
-  .golfer-line .g-status { font-family: 'Spline Sans Mono', monospace; font-size: 0.66rem; color: var(--slate); }
+  .golfer-line .g-status { font-family: 'Spline Sans Mono', monospace; font-size: 0.68rem; color: var(--slate); text-align: left; }
   .golfer-line .s { font-family: 'Spline Sans Mono', monospace; text-align: center; }
 
   .loading { font-family: 'Spline Sans Mono', monospace; font-size: 0.82rem; color: var(--slate); text-align: center; padding: 40px; }
@@ -316,7 +315,7 @@
         </div>
         ${e.picks.map((g,i)=>{ const sc=scoreFor(g); const st=statusFor(g);
           return `<div class="golfer-line ${dropped.has(i)?'dropped':''}">
-            <span class="nm-wrap"><span>${esc(g)}</span><span class="g-status">Tier ${tierMap[i]}${st?' · '+esc(st):''}</span></span>
+            <span class="g-status">${st?esc(st):''}</span><span>${esc(g)}</span>
             <span class="s">${sc===null?'—':fmt(sc)}</span></div>`;}).join('')}
       </div>`;
     }).join('');
