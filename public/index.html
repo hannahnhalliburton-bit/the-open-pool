@@ -66,11 +66,12 @@
   .entry-total { font-family: 'Spline Sans Mono', monospace; font-weight: 600; font-size: 1.25rem; padding: 4px 12px; background: var(--links-fog); border: 1px solid var(--line); border-radius: 2px; min-width: 58px; text-align: center; }
   .rank-badge { font-family: 'Spline Sans Mono', monospace; font-size: 0.7rem; background: var(--gorse); color: var(--sea-deep); font-weight: 600; padding: 3px 8px; border-radius: 2px; }
   .rank-badge.leader { background: var(--sea-deep); color: var(--gorse); }
-  .golfer-line { display: grid; grid-template-columns: 56px 1fr 60px; gap: 10px; padding: 5px 18px; font-size: 0.9rem; align-items: center; }
+  .golfer-line { display: grid; grid-template-columns: 1fr 60px; gap: 10px; padding: 6px 18px; font-size: 0.9rem; align-items: center; }
   .golfer-line:first-child { padding-top: 12px; }
   .golfer-line:last-child { padding-bottom: 14px; }
   .golfer-line.dropped { opacity: 0.4; }
-  .golfer-line .t { font-family: 'Spline Sans Mono', monospace; font-size: 0.72rem; color: var(--slate); }
+  .golfer-line .nm-wrap { display: flex; flex-direction: column; line-height: 1.25; }
+  .golfer-line .g-status { font-family: 'Spline Sans Mono', monospace; font-size: 0.66rem; color: var(--slate); }
   .golfer-line .s { font-family: 'Spline Sans Mono', monospace; text-align: center; }
 
   .loading { font-family: 'Spline Sans Mono', monospace; font-size: 0.82rem; color: var(--slate); text-align: center; padding: 40px; }
@@ -144,6 +145,7 @@
   const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   let tiers = { A: [], B: [], C: [] };
   let scoreMap = {};
+  let infoMap = {};   // norm(name) -> { status, thru, teeTime, position }
 
   const norm = (s) => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').trim();
   const esc = (s) => (''+s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -158,6 +160,17 @@
   })();
 
   function scoreFor(name) { if(!name) return null; const s = scoreMap[norm(name)]; return (s===undefined||s===null)?null:s; }
+
+  // Returns a short status string for a golfer: tee time if not started,
+  // "thru 12" mid-round, "F" when finished.
+  function statusFor(name) {
+    const info = infoMap[norm(name)];
+    if (!info) return '';
+    if (info.status === 'not started') return info.teeTime || 'Not started';
+    if (info.status === 'complete' || info.thru === 'F') return 'F';
+    if (info.thru) return 'thru ' + info.thru;
+    return 'In play';
+  }
 
   function computeTotal(picks) {
     const scored = picks.map((pk,i)=>({ i, s: scoreFor(pk) }));
@@ -182,8 +195,12 @@
     const dot = document.getElementById('dot'), txt = document.getElementById('liveText');
     try {
       const r = await fetch('/api/leaderboard'); const d = await r.json();
-      scoreMap = {};
-      (d.players||[]).forEach(p => { if (p.total!==null) scoreMap[norm(p.name)] = p.total; });
+      scoreMap = {}; infoMap = {};
+      (d.players||[]).forEach(p => {
+        const key = norm(p.name);
+        if (p.total!==null) scoreMap[key] = p.total;
+        infoMap[key] = { status: p.status, thru: p.thru, teeTime: p.teeTime, position: p.position };
+      });
       dot.className = 'dot live'; txt.textContent = 'Live · ' + new Date().toLocaleTimeString();
     } catch(e) { dot.className = 'dot err'; txt.textContent = 'Scores unavailable'; }
   }
@@ -297,9 +314,9 @@
           <span class="who">${esc(e.name)}</span>
           <span class="entry-total">${hasScores?fmt(total):'—'}</span>
         </div>
-        ${e.picks.map((g,i)=>{ const sc=scoreFor(g);
+        ${e.picks.map((g,i)=>{ const sc=scoreFor(g); const st=statusFor(g);
           return `<div class="golfer-line ${dropped.has(i)?'dropped':''}">
-            <span class="t">Tier ${tierMap[i]}</span><span>${esc(g)}</span>
+            <span class="nm-wrap"><span>${esc(g)}</span><span class="g-status">Tier ${tierMap[i]}${st?' · '+esc(st):''}</span></span>
             <span class="s">${sc===null?'—':fmt(sc)}</span></div>`;}).join('')}
       </div>`;
     }).join('');
