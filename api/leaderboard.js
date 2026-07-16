@@ -1,20 +1,16 @@
 // Vercel serverless function.
 // Fetches the live leaderboard from Slash Golf (Live Golf Data on RapidAPI)
-// and returns a trimmed list of { name, position, total } to the browser.
+// and returns a trimmed list of players to the browser.
 //
 // Your RapidAPI key is read from the environment variable RAPIDAPI_KEY,
 // which you set in the Vercel dashboard — it is NEVER sent to the browser.
 
 const RAPIDAPI_HOST = 'live-golf-data.p.rapidapi.com';
-
-// The Open Championship 2026. orgId 1 = PGA Tour feed; The Open carries its own
-// tournId. These are set as env vars so you can adjust without editing code.
 const YEAR = process.env.TOURN_YEAR || '2026';
 const ORG_ID = process.env.ORG_ID || '1';
-const TOURN_ID = process.env.TOURN_ID || '100'; // The Open — verify per docs
+const TOURN_ID = process.env.TOURN_ID || '100';
 
 export default async function handler(req, res) {
-  // Allow the browser page to call this function.
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   const key = process.env.RAPIDAPI_KEY;
@@ -39,30 +35,21 @@ export default async function handler(req, res) {
 
     const data = await r.json();
 
-    // DEBUG: add ?debug=1 to the URL to see every raw field the feed returns
-    // for the first few players. This lets us find hole/tee-time field names.
-    if (req.query && req.query.debug) {
-      const sample = (data.leaderboardRows || []).slice(0, 3);
-      return res.status(200).json({ rawSample: sample });
-    }
-
-    // The feed returns a `leaderboardRows` array. Each row has firstName,
-    // lastName, position, and `total` (score to par as a string like "-7" or "E").
     const rows = (data.leaderboardRows || []).map((row) => {
       const name = `${row.firstName || ''} ${row.lastName || ''}`.trim();
       let total = row.total;
-      // Normalise "E" to 0 and strip any stray characters.
       if (total === 'E' || total === 'e') total = 0;
       else if (typeof total === 'string') total = parseInt(total.replace('+', ''), 10);
       return {
         name,
         position: row.position || row.currentPos || '',
         total: Number.isNaN(total) ? null : total,
-        status: row.status || '', // e.g. "cut", "active"
+        status: row.status || '',      // "not started" | "active" | "complete" | "cut"
+        thru: row.thru || '',          // "F" when done, or a hole number like "12"
+        teeTime: row.teeTime || '',    // e.g. "7:41am" for players who haven't started
       };
     });
 
-    // Cache for 90 seconds at the edge to protect your 250-call monthly quota.
     res.setHeader('Cache-Control', 's-maxage=90, stale-while-revalidate=120');
     return res.status(200).json({ updated: new Date().toISOString(), players: rows });
   } catch (err) {
